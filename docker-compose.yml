@@ -3,5 +3,4 @@ services:
   bash:
     build: .
     volumes:
-      - ./tmp:/home/ubuntu/tmp
-      - ./src:/home/ubuntu/src
+      - .:/home/ubuntu/dev
