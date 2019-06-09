@@ -1,0 +1,7 @@
+version: "3"
+services:
+  bash:
+    build: .
+    volumes:
+      - ./tmp:/home/ubuntu/tmp
+      - ./src:/home/ubuntu/src
