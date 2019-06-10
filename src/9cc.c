@@ -1,22 +1,7 @@
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-enum {
-    TK_NUM = 256,
-    TK_EOF,
-};
-
-typedef struct {
-    int ty;
-    int val;
-    char *input;
-} Token;
+#include "9cc.h"
 
 char *user_input;
-
+int pos = 0;
 Token tokens[100];
 
 void error(char *fmt, ...) {
@@ -74,6 +59,76 @@ void tokenize() {
 
     tokens[i].ty = TK_EOF;
     tokens[i].input = p;
+}
+
+Node *new_node(int ty, Node *lhs, Node *rhs) {
+    Node *node = malloc(sizeof(Node));
+
+    node->ty = ty;
+    node->lhs = lhs;
+    node->rhs = rhs;
+
+    return node;
+}
+
+Node *new_node_num(int val) {
+    Node *node = malloc(sizeof(Node));
+
+    node->ty = ND_NUM;
+    node->val = val;
+
+    return node;
+}
+
+int consume(int ty) {
+    if (tokens[pos].ty != ty)
+        return 0;
+
+    pos++;
+
+    return 1;
+}
+
+Node *expr() {
+    Node *node = mul();
+
+    for (;;) {
+        if (consume('+'))
+            node = new_node('+', node, mul());
+        else if (consume('-'))
+            node = new_node('-', node, mul());
+        else
+            return node;
+    }
+}
+
+Node *mul() {
+    Node *node = term();
+
+    for (;;) {
+        if (consume('*'))
+            node = new_node('*', node, term());
+        else if (consume('/'))
+            node = new_node('/', node, term());
+        else
+            return node;
+    }
+}
+
+Node *term() {
+    if (consume('(')) {
+        Node *node = expr();
+
+        if (!consume(')'))
+            error_at(tokens[pos].input, "開き括弧に対する閉じ括弧がありません");
+
+        return node;
+    }
+
+    if (tokens[pos].ty == TK_NUM)
+        return new_node_num(tokens[pos++].val);
+
+    error_at(tokens[pos].input, "数値でも開き括弧でもないトークンです");
 }
 
 int main(int argc, char **argv) {
