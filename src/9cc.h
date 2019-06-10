@@ -36,4 +36,5 @@ int consume(int ty);
 Node *expr();
 Node *mul();
 Node *term();
+void gen(Node *node);
 
