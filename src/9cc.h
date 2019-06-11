@@ -35,6 +35,7 @@ Node *new_node_num(int val);
 int consume(int ty);
 Node *expr();
 Node *mul();
+Node *unary();
 Node *term();
 void gen(Node *node);
 
