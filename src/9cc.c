@@ -134,10 +134,10 @@ Node *term() {
         return node;
     }
 
-    if (tokens[pos].ty == TK_NUM)
-        return new_node_num(tokens[pos++].val);
+    if (tokens[pos].ty != TK_NUM)
+        error_at(tokens[pos].input, "数値でも開き括弧でもないトークンです");
 
-    error_at(tokens[pos].input, "数値でも開き括弧でもないトークンです");
+    return new_node_num(tokens[pos++].val);
 }
 
 void gen(Node *node) {
