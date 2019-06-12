@@ -8,6 +8,10 @@
 enum {
     TK_NUM = 256,
     TK_EOF,
+    TK_EQ,
+    TK_NE,
+    TK_LE,
+    TK_GE,
 };
 
 typedef struct {
@@ -34,6 +38,9 @@ Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
 int consume(int ty);
 Node *expr();
+Node *equality();
+Node *relational();
+Node *add();
 Node *mul();
 Node *unary();
 Node *term();

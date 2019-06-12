@@ -34,7 +34,47 @@ void tokenize() {
             continue;
         }
 
-        if (strchr("+-*/()", *p)) {
+        if (!strncmp(p, "==", 2)) {
+            tokens[i].ty = TK_EQ;
+            tokens[i].input = p;
+
+            i++;
+            p += strlen("==");
+
+            continue;
+        }
+
+        if (!strncmp(p, "!=", 2)) {
+            tokens[i].ty = TK_NE;
+            tokens[i].input = p;
+
+            i++;
+            p += strlen("!=");
+
+            continue;
+        }
+
+        if (!strncmp(p, "<=", 2)) {
+            tokens[i].ty = TK_LE;
+            tokens[i].input = p;
+
+            i++;
+            p += strlen("<=");
+
+            continue;
+        }
+
+        if (!strncmp(p, ">=", 2)) {
+            tokens[i].ty = TK_GE;
+            tokens[i].input = p;
+
+            i++;
+            p += strlen(">=");
+
+            continue;
+        }
+
+        if (strchr("+-*/()<>", *p)) {
             tokens[i].ty = *p;
             tokens[i].input = p;
 
@@ -90,6 +130,40 @@ int consume(int ty) {
 }
 
 Node *expr() {
+    return equality();
+}
+
+Node *equality() {
+    Node *node = relational();
+
+    for (;;) {
+        if (consume(TK_EQ))
+            node = new_node(TK_EQ, node, relational());
+        else if (consume(TK_NE))
+            node = new_node(TK_NE, node, relational());
+        else
+            return node;
+    }
+}
+
+Node *relational() {
+    Node *node = add();
+
+    for (;;) {
+        if (consume('<'))
+            node = new_node('<', node, add());
+        else if (consume(TK_LE))
+            node = new_node(TK_LE, node, add());
+        else if (consume('>'))
+            node = new_node('<', add(), node);
+        else if (consume(TK_GE))
+            node = new_node(TK_LE, add(), node);
+        else
+            return node;
+    }
+}
+
+Node *add() {
     Node *node = mul();
 
     for (;;) {
@@ -165,6 +239,26 @@ void gen(Node *node) {
     case '/':
         printf("    cqo\n");
         printf("    idiv rdi\n");
+        break;
+    case TK_EQ:
+        printf("    cmp rax, rdi\n");
+        printf("    sete al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case TK_NE:
+        printf("    cmp rax, rdi\n");
+        printf("    setne al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case '<':
+        printf("    cmp rax, rdi\n");
+        printf("    setl al\n");
+        printf("    movzb rax, al\n");
+        break;
+    case TK_LE:
+        printf("    cmp rax, rdi\n");
+        printf("    setle al\n");
+        printf("    movzb rax, al\n");
         break;
     }
 
