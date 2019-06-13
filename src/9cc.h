@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+void error(char *fmt, ...);
+void error_at(char *loc, char *msg);
+
 enum {
     TK_NUM = 256,
     TK_EOF,
@@ -20,6 +23,9 @@ typedef struct {
     char *input;
 } Token;
 
+Token *add_token(int ty, char *input);
+void tokenize();
+
 enum {
     ND_NUM = 256,
 };
@@ -31,12 +37,8 @@ typedef struct Node {
     int val;
 } Node;
 
-void error(char *fmt, ...);
-void error_at(char *loc, char *msg);
-void tokenize();
 Node *new_node(int ty, Node *lhs, Node *rhs);
 Node *new_node_num(int val);
-int consume(int ty);
 Node *expr();
 Node *equality();
 Node *relational();
@@ -44,5 +46,14 @@ Node *add();
 Node *mul();
 Node *unary();
 Node *term();
+int consume(int ty);
 void gen(Node *node);
 
+typedef struct Vector {
+    void **data;
+    int capacity;
+    int len;
+} Vector;
+
+Vector *new_vector();
+void vec_push(Vector *vec, void *elem);

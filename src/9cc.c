@@ -2,7 +2,7 @@
 
 char *user_input;
 int pos = 0;
-Token tokens[100];
+Vector *token_vec;
 
 void error(char *fmt, ...) {
     va_list ap;
@@ -24,9 +24,39 @@ void error_at(char *loc, char *msg) {
     exit(1);
 }
 
+Vector *new_vector() {
+    Vector *vec = malloc(sizeof(Vector));
+
+    vec->data = malloc(sizeof(void *) * 16);
+    vec->capacity = 16;
+    vec->len = 0;
+
+    return vec;
+}
+
+void vec_push(Vector *vec, void *elem) {
+    if (vec->capacity == vec->len) {
+        vec->capacity *= 2;
+        vec->data = realloc(vec->data, sizeof(void *) * vec->capacity);
+    }
+
+    vec->data[vec->len++] = elem;
+}
+
+Token *add_token(int ty, char *input) {
+    Token *token = (Token *)calloc(1, sizeof(Token));
+
+    token->ty = ty;
+    token->input = input;
+
+    vec_push(token_vec, token);
+
+    return token;
+}
+
 void tokenize() {
     char *p = user_input;
-    int i = 0;
+    token_vec = new_vector();
 
     while (*p) {
         if (isspace(*p)) {
@@ -35,61 +65,48 @@ void tokenize() {
         }
 
         if (!strncmp(p, "==", 2)) {
-            tokens[i].ty = TK_EQ;
-            tokens[i].input = p;
+            add_token(TK_EQ, p);
 
-            i++;
             p += strlen("==");
 
             continue;
         }
 
         if (!strncmp(p, "!=", 2)) {
-            tokens[i].ty = TK_NE;
-            tokens[i].input = p;
+            add_token(TK_NE, p);
 
-            i++;
             p += strlen("!=");
 
             continue;
         }
 
         if (!strncmp(p, "<=", 2)) {
-            tokens[i].ty = TK_LE;
-            tokens[i].input = p;
+            add_token(TK_LE, p);
 
-            i++;
             p += strlen("<=");
 
             continue;
         }
 
         if (!strncmp(p, ">=", 2)) {
-            tokens[i].ty = TK_GE;
-            tokens[i].input = p;
+            add_token(TK_GE, p);
 
-            i++;
             p += strlen(">=");
 
             continue;
         }
 
         if (strchr("+-*/()<>", *p)) {
-            tokens[i].ty = *p;
-            tokens[i].input = p;
+            add_token(*p, p);
 
-            i++;
             p++;
 
             continue;
         }
 
         if (isdigit(*p)) {
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-
-            i++;
+            Token *t = add_token(TK_NUM, p);
+            t->val = strtol(p, &p, 10);
 
             continue;
         }
@@ -97,8 +114,7 @@ void tokenize() {
         error_at(p, "トークナイズできません");
     }
 
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
+    add_token(TK_EOF, p);
 }
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
@@ -121,7 +137,8 @@ Node *new_node_num(int val) {
 }
 
 int consume(int ty) {
-    if (tokens[pos].ty != ty)
+    Token *t = (Token *)token_vec->data[pos];
+    if (t->ty != ty)
         return 0;
 
     pos++;
@@ -199,19 +216,24 @@ Node *unary() {
 }
 
 Node *term() {
+    Token *t = (Token *)token_vec->data[pos];
+
     if (consume('(')) {
         Node *node = expr();
 
-        if (!consume(')'))
-            error_at(tokens[pos].input, "開き括弧に対する閉じ括弧がありません");
+        if (!consume(')')) {
+            error_at(t->input, "開き括弧に対する閉じ括弧がありません");
+        }
 
         return node;
     }
 
-    if (tokens[pos].ty != TK_NUM)
-        error_at(tokens[pos].input, "数値でも開き括弧でもないトークンです");
+    if (t->ty != TK_NUM) {
+        error_at(t->input, "数値でも開き括弧でもないトークンです");
+    }
 
-    return new_node_num(tokens[pos++].val);
+    pos++;
+    return new_node_num(t->val);
 }
 
 void gen(Node *node) {
