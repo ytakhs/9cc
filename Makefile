@@ -6,6 +6,7 @@ DEST := dest
 .PHONY: test clean
 
 test: $(DEST)/9cc
+	./dest/9cc -test
 	./test.sh
 
 clean:

@@ -287,7 +287,34 @@ void gen(Node *node) {
     printf("    push rax\n");
 }
 
+void expect(int line, int expected, int actual) {
+    if (expected == actual)
+        return;
+
+    fprintf(stderr, "%d: %d expected, but got %d\n", line, expected, actual);
+    exit(1);
+}
+
+void runtest() {
+    Vector *vec = new_vector();
+    expect(__LINE__, 0, vec->len);
+
+    for (intptr_t i = 0; i < 100; i++)
+        vec_push(vec, (void *)i);
+
+    expect(__LINE__, 100, vec->len);
+    expect(__LINE__, 0, (intptr_t)vec->data[0]);
+    expect(__LINE__, 50, (intptr_t)vec->data[50]);
+    expect(__LINE__, 99, (intptr_t)vec->data[99]);
+}
+
 int main(int argc, char **argv) {
+    if (strstr(argv[1], "-test")) {
+        runtest();
+
+        return 0;
+    }
+
     if (argc != 2) {
         fprintf(stderr, "引数の個数が正しくありません\n");
         return 1;

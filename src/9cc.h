@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 void error(char *fmt, ...);
 void error_at(char *loc, char *msg);
