@@ -58,3 +58,10 @@ typedef struct Vector {
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);
+
+void runtest();
+void expect(int line, int expected, int actual);
+
+extern char *user_input;
+extern int pos;
+extern Vector *token_vec;

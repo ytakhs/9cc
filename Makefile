@@ -1,16 +1,17 @@
-CC := gcc
-CFLAGS := -g -Wall -Wextra
-
 DEST := dest
+CC := gcc
+CFLAGS := -g -Wall -Wextra -std=c11
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
 .PHONY: test clean
 
-test: $(DEST)/9cc
-	./dest/9cc -test
+test: 9cc
+	./9cc -test
 	./test.sh
 
 clean:
-	rm -f $(DEST)/9cc $(DEST)/*.o $(DEST)/*~ $(DEST)/tmp*
+	rm -f 9cc *.o *~ tmp*
 
-$(DEST)/9cc: src/9cc.c
+9cc: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^

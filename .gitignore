@@ -1,5 +1,8 @@
 .vscode
-tmp/*
-!tmp/.gitkeep
-dest/*
-!dest/.gitkeep
+temp/*
+!temp/.gitkeep
+
+9cc
+*.o
+*~
+tmp*
