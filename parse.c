@@ -20,85 +20,48 @@ void error_at(char *loc, char *msg) {
     exit(1);
 }
 
-Token *add_token(int ty, char *input) {
-    Token *token = (Token *)calloc(1, sizeof(Token));
+bool consume(char *op) {
+    if (token->kind != TK_RESERVED || (int)strlen(op) != token->len || memcmp(token->str, op, token->len) != 0)
+        return false;
 
-    token->ty = ty;
-    token->input = input;
+    token = token->next;
 
-    vec_push(token_vec, token);
-
-    return token;
+    return true;
 }
 
-void tokenize() {
-    char *p = user_input;
-    token_vec = new_vector();
+Token *consume_ident() {
+    if (token->kind != TK_IDENT)
+        return NULL;
 
-    while (*p) {
-        if (isspace(*p)) {
-            p++;
-            continue;
-        }
+    Token *tok = token;
+    token = token->next;
 
-        if (!strncmp(p, "==", 2)) {
-            add_token(TK_EQ, p);
+    return tok;
+}
 
-            p += strlen("==");
-
-            continue;
-        }
-
-        if (!strncmp(p, "!=", 2)) {
-            add_token(TK_NE, p);
-
-            p += strlen("!=");
-
-            continue;
-        }
-
-        if (!strncmp(p, "<=", 2)) {
-            add_token(TK_LE, p);
-
-            p += strlen("<=");
-
-            continue;
-        }
-
-        if (!strncmp(p, ">=", 2)) {
-            add_token(TK_GE, p);
-
-            p += strlen(">=");
-
-            continue;
-        }
-
-        if (strchr("+-*/()<>", *p)) {
-            add_token(*p, p);
-
-            p++;
-
-            continue;
-        }
-
-        if (isdigit(*p)) {
-            Token *t = add_token(TK_NUM, p);
-            t->val = strtol(p, &p, 10);
-
-            continue;
-        }
-
-        error_at(p, "トークナイズできません");
+void expect(char *op) {
+    if (token->kind != TK_RESERVED || (int)strlen(op) != token->len || memcmp(token->str, op, token->len) != 0) {
+        error("not '%s', but '%s'", op, token->str);
     }
 
-    add_token(TK_EOF, p);
+    token = token->next;
 }
 
+int expect_number() {
+    if (token->kind != TK_NUM) {
+        error("not a number");
+    }
 
-Node *new_node(int ty, Node *lhs, Node *rhs) {
-    Node *node = malloc(sizeof(Node));
+    int val = token->val;
+    token = token->next;
 
-    node->ty = ty;
+    return val;
+}
+
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
+    Node *node = calloc(1, sizeof(Node));
+
+    node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
 
@@ -106,36 +69,51 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
 }
 
 Node *new_node_num(int val) {
-    Node *node = malloc(sizeof(Node));
+    Node *node = calloc(1, sizeof(Node));
 
-    node->ty = ND_NUM;
+    node->kind = ND_NUM;
     node->val = val;
 
     return node;
 }
 
-int consume(int ty) {
-    Token *t = (Token *)token_vec->data[pos];
-    if (t->ty != ty)
-        return 0;
+void program() {
+    int i = 0;
 
-    pos++;
+    while(!at_eof())
+        code[i++] = stmt();
 
-    return 1;
+    code[i] = NULL;
+}
+
+Node *stmt() {
+    Node *node = expr();
+
+    expect(";");
+
+    return node;
 }
 
 Node *expr() {
-    return equality();
+    return assign();
+}
+
+Node *assign() {
+    Node *node = equality();
+    if (consume("="))
+        node = new_node(ND_ASSIGN, node, assign());
+
+    return node;
 }
 
 Node *equality() {
     Node *node = relational();
 
     for (;;) {
-        if (consume(TK_EQ))
-            node = new_node(TK_EQ, node, relational());
-        else if (consume(TK_NE))
-            node = new_node(TK_NE, node, relational());
+        if (consume("=="))
+            node = new_node(ND_EQ, node, relational());
+        else if (consume("!="))
+            node = new_node(ND_NE, node, relational());
         else
             return node;
     }
@@ -145,14 +123,14 @@ Node *relational() {
     Node *node = add();
 
     for (;;) {
-        if (consume('<'))
-            node = new_node('<', node, add());
-        else if (consume(TK_LE))
-            node = new_node(TK_LE, node, add());
-        else if (consume('>'))
-            node = new_node('<', add(), node);
-        else if (consume(TK_GE))
-            node = new_node(TK_LE, add(), node);
+        if (consume("<"))
+            node = new_node(ND_LT, node, add());
+        else if (consume("<="))
+            node = new_node(ND_LE, node, add());
+        else if (consume(">"))
+            node = new_node(ND_LT, add(), node);
+        else if (consume(">="))
+            node = new_node(ND_LE, add(), node);
         else
             return node;
     }
@@ -162,10 +140,10 @@ Node *add() {
     Node *node = mul();
 
     for (;;) {
-        if (consume('+'))
-            node = new_node('+', node, mul());
-        else if (consume('-'))
-            node = new_node('-', node, mul());
+        if (consume("+"))
+            node = new_node(ND_ADD, node, mul());
+        else if (consume("-"))
+            node = new_node(ND_SUB, node, mul());
         else
             return node;
     }
@@ -175,41 +153,41 @@ Node *mul() {
     Node *node = unary();
 
     for (;;) {
-        if (consume('*'))
-            node = new_node('*', node, unary());
-        else if (consume('/'))
-            node = new_node('/', node, unary());
+        if (consume("*"))
+            node = new_node(ND_MUL, node, unary());
+        else if (consume("/"))
+            node = new_node(ND_DIV, node, unary());
         else
             return node;
     }
 }
 
 Node *unary() {
-    if (consume('+'))
+    if (consume("+"))
         return term();
-    if (consume('-'))
-        return new_node('-', new_node_num(0), term());
+    if (consume("-"))
+        return new_node(ND_SUB, new_node_num(0), term());
 
     return term();
 }
 
 Node *term() {
-    Token *t = (Token *)token_vec->data[pos];
-
-    if (consume('(')) {
+    if (consume("(")) {
         Node *node = expr();
 
-        if (!consume(')')) {
-            error_at(t->input, "開き括弧に対する閉じ括弧がありません");
-        }
+        expect(")");
 
         return node;
     }
 
-    if (t->ty != TK_NUM) {
-        error_at(t->input, "数値でも開き括弧でもないトークンです");
+    Token *tok = consume_ident();
+    if (tok) {
+        Node *node = calloc(1, sizeof(Node));
+        node->kind = ND_LVAR;
+        node->offset = (tok->str[0] - 'a' + 1) * 8;
+
+        return node;
     }
 
-    pos++;
-    return new_node_num(t->val);
+    return new_node_num(expect_number());
 }

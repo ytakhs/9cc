@@ -4,3 +4,7 @@ services:
     build: .
     volumes:
       - .:/home/ubuntu/dev
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
