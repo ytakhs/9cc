@@ -88,3 +88,15 @@ Token *tokenize(char *p) {
 
     return head.next;
 }
+
+LVar *find_lvar(Token *tok) {
+    for (LVar *var = locals; var; var = var->next)
+        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
+            return var;
+
+    return NULL;
+}
+
+bool is_alpha(char *p) {
+    return 'a' <= *p && *p <= 'z';
+}

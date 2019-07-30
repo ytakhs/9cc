@@ -34,9 +34,19 @@ struct Token {
 extern Token *token;
 
 bool at_eof();
+bool is_alpha(char *p);
 
 Token *tokenize();
 Token *new_token(TokenKind kind, Token *cur, char *str);
+
+typedef struct LVar LVar;
+typedef struct LVar {
+    LVar *next;
+    char *name;
+    int len;
+    int offset;
+} LVar;
+LVar *find_lvar(Token *tok);
 
 typedef enum {
     ND_NUM = 256,
@@ -93,3 +103,4 @@ void vec_push(Vector *vec, void *elem);
 
 extern Node *code[100];
 extern char *user_input;
+extern LVar *locals;
