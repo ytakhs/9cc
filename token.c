@@ -66,10 +66,8 @@ Token *tokenize(char *p) {
         }
 
         if ('a' <= *p && *p <= 'z') {
-            cur = new_token(TK_IDENT, cur, p++);
-            cur->len = 1;
-
-            p++;
+            cur = ident(p, cur);
+            p = p + cur->len;
 
             continue;
         }
@@ -89,14 +87,16 @@ Token *tokenize(char *p) {
     return head.next;
 }
 
-LVar *find_lvar(Token *tok) {
-    for (LVar *var = locals; var; var = var->next)
-        if (var->len == tok->len && !memcmp(tok->str, var->name, var->len))
-            return var;
+Token *ident(char *p, Token *cur) {
+    int len = 1;
 
-    return NULL;
-}
+    while (isalpha(p[len]) || isdigit(p[len]) || p[len] == '_')
+        len++;
 
-bool is_alpha(char *p) {
-    return 'a' <= *p && *p <= 'z';
+    char *name = strndup(p, len);
+    cur = new_token(TK_IDENT, cur, name);
+    cur->str = name;
+    cur->len = len;
+
+    return cur;
 }

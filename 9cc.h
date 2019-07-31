@@ -34,7 +34,6 @@ struct Token {
 extern Token *token;
 
 bool at_eof();
-bool is_alpha(char *p);
 
 Token *tokenize();
 Token *new_token(TokenKind kind, Token *cur, char *str);
@@ -47,6 +46,7 @@ typedef struct LVar {
     int offset;
 } LVar;
 LVar *find_lvar(Token *tok);
+Token *ident(char *p, Token *cur);
 
 typedef enum {
     ND_NUM = 256,
